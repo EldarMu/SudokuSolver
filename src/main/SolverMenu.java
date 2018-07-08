@@ -77,14 +77,13 @@ public class SolverMenu extends JFrame{
                 else{
                     SolverAlgorithm slv = new SolverAlgorithm();
                     SudokuSolution result = slv.solveSudoku(sudokuVals);
-                    if (result.solveSuccess == false) { JOptionPane.showMessageDialog(new JFrame(),
-                            "Could not solve Puzzle");}
-                    else{
-                        for (int i = 0; i < 9; i++){
-                            for (int j = 0; j < 9; j++){
-                                if(result.sudokuBoard[i][j]!=0){
-                                    fields[i][j].setText(result.sudokuBoard[i][j]+"");
-                                }
+                    if (result.solveSuccess == false) {
+                        JOptionPane.showMessageDialog(new JFrame(),"Could not solve Puzzle");
+                    }
+                    for (int i = 0; i < 9; i++){
+                        for (int j = 0; j < 9; j++){
+                            if(result.sudokuBoard[i][j]!=0){
+                                fields[i][j].setText(result.sudokuBoard[i][j]+"");
                             }
                         }
                     }

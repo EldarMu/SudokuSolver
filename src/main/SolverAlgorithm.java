@@ -5,12 +5,14 @@ import java.util.List;
 /**
  * Created by eldar on 7/8/2018.
  */
+
+//though it won't crack Arto Inkala's "World's Hardest Sudoku", it beats anything else I throw at it.
 public class SolverAlgorithm {
     public SudokuSolution solveSudoku(int[][] sudokuBoard){
         List<SudokuCell> disqualifiedCells = new LinkedList<>();
-        return recursSolver(sudokuBoard, disqualifiedCells);
+        return recursSolver(sudokuBoard);
     }
-    private SudokuSolution recursSolver(int[][] sudokuBoard, List<SudokuCell> disqualifiedCells) {
+    private SudokuSolution recursSolver(int[][] sudokuBoard) {
         SudokuCell[][] sudokuCellBoard = constructBoard(sudokuBoard);
         SudokuCell[][] innerBoxes = fillInnerBoxes(sudokuCellBoard);
         boolean lastScanSolvedACell = true;
@@ -78,24 +80,15 @@ public class SolverAlgorithm {
             return new SudokuSolution(solution, true);
         }
         if(!lastScanSolvedACell){
-            for(int i = 0; i < uncertainCells.size(); i++){
-                for(SudokuCell c: disqualifiedCells){
-                    if(uncertainCells.get(i).row==c.row && uncertainCells.get(i).column == c.column){
-                        uncertainCells.remove(i);
-                        break;
-                    }
-                }
-            }
             Collections.sort(uncertainCells);
             for(SudokuCell c : uncertainCells){
                 for(Integer val: c.possibleVals){
-                    SudokuSolution valueGuess = recursSolver(deconstructBoard(sudokuCellBoard, c, val), disqualifiedCells);
+                    SudokuSolution valueGuess = recursSolver(deconstructBoard(sudokuCellBoard, c, val));
                     if(valueGuess.solveSuccess){return valueGuess;}
                 }
-                disqualifiedCells.add(c);
             }
         }
-        return new SudokuSolution(deconstructBoard(sudokuCellBoard, sudokuCellBoard[0][0], sudokuCellBoard[0][0].currentVal), true);
+        return new SudokuSolution(deconstructBoard(sudokuCellBoard, sudokuCellBoard[0][0], sudokuCellBoard[0][0].currentVal), false);
     }
 
     private boolean checkIfOnlyPossiblePlaceForValue(SudokuCell[] rowColOrBox){
