@@ -45,50 +45,48 @@ public class SolverAlgorithm {
                 }
             }
             //follow-up scan of "only place where a value can go"
-            for(int i = 0; i < 9; i++){
-                SudokuCell[] colSlice = new SudokuCell[9];
-                SudokuCell[] boxSlice = new SudokuCell[9];
-                SudokuCell[] rowSlice = new SudokuCell[9];
-                for(int j = 0; j < 9; j++){
-                    colSlice[j] = sudokuCellBoard[i][j];
-                    boxSlice[j] = innerBoxes[i][j];
-                    rowSlice[j] = sudokuCellBoard[j][i];
+            //needs to only run if no cell was modified prior,
+            //to ensure potential cell values match the situation on the board
+            if(!lastScanSolvedACell){
+                for(int i = 0; i < 9; i++){
+                    SudokuCell[] colSlice = new SudokuCell[9];
+                    SudokuCell[] boxSlice = new SudokuCell[9];
+                    SudokuCell[] rowSlice = new SudokuCell[9];
+                    for(int j = 0; j < 9; j++){
+                        colSlice[j] = sudokuCellBoard[j][i];
+                        boxSlice[j] = innerBoxes[i][j];
+                        rowSlice[j] = sudokuCellBoard[i][j];
+                    }
+                    if(checkIfOnlyPossiblePlaceForValue(colSlice)){
+                        lastScanSolvedACell=true;
+                        continue;
+                    }
+                    if(checkIfOnlyPossiblePlaceForValue(rowSlice)){
+                        lastScanSolvedACell=true;
+                        continue;
+                    }
+                    if(checkIfOnlyPossiblePlaceForValue(boxSlice)){
+                        lastScanSolvedACell=true;
+                        continue;
+                    }
                 }
-                if(checkIfOnlyPossiblePlaceForValue(colSlice)){
-                    lastScanSolvedACell=true;
-                    continue;
-                }
-                if(checkIfOnlyPossiblePlaceForValue(rowSlice)){
-                    lastScanSolvedACell=true;
-                    continue;
-                }
-                if(checkIfOnlyPossiblePlaceForValue(boxSlice)){
-                    lastScanSolvedACell=true;
-                    continue;
-                }
-
             }
-
         }
         if(allValsFilled){
-            int[][] solution = new int[9][9];
-            for(int i = 0; i < 9; i++){
-                for(int j = 0; j < 9; j++){
-                    solution[i][j] = sudokuCellBoard[i][j].currentVal;
-                }
-            }
-            return new SudokuSolution(solution, true);
+            return new SudokuSolution(deconstructBoard(sudokuCellBoard), true);
         }
         if(!lastScanSolvedACell){
             Collections.sort(uncertainCells);
             for(SudokuCell c : uncertainCells){
                 for(Integer val: c.possibleVals){
-                    SudokuSolution valueGuess = recursSolver(deconstructBoard(sudokuCellBoard, c, val));
+                    int[][] boardWithGuess = deconstructBoard(sudokuCellBoard);
+                    boardWithGuess[c.row][c.column] = val;
+                    SudokuSolution valueGuess = recursSolver(boardWithGuess);
                     if(valueGuess.solveSuccess){return valueGuess;}
                 }
             }
         }
-        return new SudokuSolution(deconstructBoard(sudokuCellBoard, sudokuCellBoard[0][0], sudokuCellBoard[0][0].currentVal), false);
+        return new SudokuSolution(deconstructBoard(sudokuCellBoard), false);
     }
 
     private boolean checkIfOnlyPossiblePlaceForValue(SudokuCell[] rowColOrBox){
@@ -127,16 +125,11 @@ public class SolverAlgorithm {
         return false;
     }
 
-    private int[][] deconstructBoard(SudokuCell[][] board, SudokuCell change, int potentialVal){
+    private int[][] deconstructBoard(SudokuCell[][] board){
         int[][] deconstructedBoard = new int[9][9];
         for(int i = 0; i < 9; i++){
             for(int j = 0; j<9; j++){
-                if(i==change.row&&j==change.column){
-                    deconstructedBoard[i][j] = potentialVal;
-                }
-                else{
-                    deconstructedBoard[i][j] = board[i][j].currentVal;
-                }
+                deconstructedBoard[i][j] = board[i][j].currentVal;
             }
         }
         return deconstructedBoard;
