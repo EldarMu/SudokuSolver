@@ -83,29 +83,27 @@ public class SolverAlgorithm {
         //then sort that list by the ones that have the least options
         //and "pencil them in"
         //(aka run the method recursively as if they were valid values, and see if it returns false)
-        if(!lastScanSolvedACell){
-            for(int i = 0; i < 9; i++){
-                for(int j = 0; j < 9; j++){
-                    SudokuCell curCell = sudokuBoard.cellBoard[i][j];
-                    if(curCell.possibleVals.size()>1){
-                        uncertainCells.add(curCell);
-                    }
+        for(int i = 0; i < 9; i++){
+            for(int j = 0; j < 9; j++){
+                SudokuCell curCell = sudokuBoard.cellBoard[i][j];
+                if(curCell.possibleVals.size()>1){
+                    uncertainCells.add(curCell);
                 }
             }
-            Collections.sort(uncertainCells);
+        }
+        Collections.sort(uncertainCells);
 
-            for(SudokuCell c : uncertainCells){
-                for(Integer val: c.possibleVals){
-                    int[][] boardWithGuess = new int[9][9];
-                    for(int i = 0; i < 9; i++){
-                        for(int j = 0; j < 9; j++){
-                            boardWithGuess[i][j] = sudokuBoard.intBoard[i][j];
-                        }
+        for(SudokuCell c : uncertainCells){
+            for(Integer val: c.possibleVals){
+                int[][] boardWithGuess = new int[9][9];
+                for(int i = 0; i < 9; i++){
+                    for(int j = 0; j < 9; j++){
+                        boardWithGuess[i][j] = sudokuBoard.intBoard[i][j];
                     }
-                    boardWithGuess[c.row][c.column] = val;
-                    SudokuSolution valueGuess = solveSudoku(boardWithGuess, stackLayer+1);
-                    if(valueGuess.solveSuccess){return valueGuess;}
                 }
+                boardWithGuess[c.row][c.column] = val;
+                SudokuSolution valueGuess = solveSudoku(boardWithGuess, stackLayer+1);
+                if(valueGuess.solveSuccess){return valueGuess;}
             }
         }
         return new SudokuSolution(sudokuBoard.intBoard, false);
