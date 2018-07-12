@@ -16,10 +16,10 @@ import static javax.swing.SwingConstants.CENTER;
  */
 public class SolverMenu extends JFrame{
     private JPanel pan;
-    JTextField[][] fields=new JTextField[9][9];
-    JButton solveBtn;
-    GridBagConstraints c1;
-    Font fnt;
+    private JTextField[][] fields;
+    private JButton solveBtn;
+    private GridBagConstraints c1;
+    private Font fnt;
 
     public static void main(String args[]){
         SolverMenu solver = new SolverMenu();
@@ -34,9 +34,10 @@ public class SolverMenu extends JFrame{
         pan = new JPanel();
         pan.setLayout(new GridBagLayout());
         fnt = new Font("Arial Bold", Font.BOLD, 30);
+        fields = new JTextField[9][9];
 
-        for(int i=0;i<9;i++){
-            for(int j=0; j<9; j++){
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
                 JTextField field = new JTextField();
                 field.setFont(fnt);
                 field.setHorizontalAlignment(CENTER);
@@ -59,32 +60,28 @@ public class SolverMenu extends JFrame{
                 for (int i = 0; i < 9; i++) {
                     for (int j = 0; j < 9; j++) {
                         String curText = fields[i][j].getText();
-                        boolean emptyStr = curText.isEmpty();
                         boolean validNum = curText.length() == 1 && Character.isDigit(curText.charAt(0));
-                        if (emptyStr) {
+                        if(!validNum && !curText.isEmpty()){
+                            JOptionPane.showMessageDialog(new JFrame(), "please enter real sudoku numbers," +
+                                    " or leave a line blank");
+                            return;
+                        }
+                        if (curText.isEmpty()) {
                             sudokuVals[i][j] = 0;
                         } else if (validNum) {
                             sudokuVals[i][j] = Character.getNumericValue(curText.charAt(0));
-                        } else {
-                            validVals = false;
                         }
                     }
                 }
-                if(!validVals){
-                    JOptionPane.showMessageDialog(new JFrame(), "please enter real sudoku numbers," +
-                            " or leave a line blank");
+                SolverAlgorithm slv = new SolverAlgorithm();
+                SudokuSolution result = slv.solveSudoku(sudokuVals);
+                if (!result.solveSuccess) {
+                    JOptionPane.showMessageDialog(new JFrame(),"Could not solve Puzzle");
                 }
-                else{
-                    SolverAlgorithm slv = new SolverAlgorithm();
-                    SudokuSolution result = slv.solveSudoku(sudokuVals);
-                    if (result.solveSuccess == false) {
-                        JOptionPane.showMessageDialog(new JFrame(),"Could not solve Puzzle");
-                    }
-                    for (int i = 0; i < 9; i++){
-                        for (int j = 0; j < 9; j++){
-                            if(result.sudokuBoard[i][j]!=0){
-                                fields[i][j].setText(result.sudokuBoard[i][j]+"");
-                            }
+                for (int i = 0; i < 9; i++){
+                    for (int j = 0; j < 9; j++){
+                        if(result.sudokuBoard[i][j]!=0){
+                            fields[i][j].setText(Integer.toString(result.sudokuBoard[i][j]));
                         }
                     }
                 }

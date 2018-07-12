@@ -9,10 +9,6 @@ import java.util.List;
 //though it won't crack Arto Inkala's "World's Hardest Sudoku", it beats anything else I throw at it.
 public class SolverAlgorithm {
     public SudokuSolution solveSudoku(int[][] sudokuBoard){
-        List<SudokuCell> disqualifiedCells = new LinkedList<>();
-        return recursSolver(sudokuBoard);
-    }
-    private SudokuSolution recursSolver(int[][] sudokuBoard) {
         SudokuCell[][] sudokuCellBoard = constructBoard(sudokuBoard);
         SudokuCell[][] innerBoxes = fillInnerBoxes(sudokuCellBoard);
         boolean lastScanSolvedACell = true;
@@ -26,7 +22,6 @@ public class SolverAlgorithm {
             for (int i = 0; i < 9; i++) {
                 for (int j = 0; j < 9; j++) {
                     if(sudokuCellBoard[i][j].currentVal==0){
-                        allValsFilled = false;
                         List<Integer> possibleVals = calculatePossibleCellVals(sudokuCellBoard[i][j],
                                 sudokuCellBoard, innerBoxes);
                         if(possibleVals.size()==0){
@@ -34,10 +29,11 @@ public class SolverAlgorithm {
                         }
                         else if(possibleVals.size()==1){
                             sudokuCellBoard[i][j].currentVal = possibleVals.get(0);
-                            sudokuCellBoard[i][j].possibleVals = new LinkedList<Integer>();
+                            sudokuCellBoard[i][j].possibleVals = new LinkedList<>();
                             lastScanSolvedACell = true;
                         }
                         else{
+                            allValsFilled = false;
                             sudokuCellBoard[i][j].possibleVals = possibleVals;
                             uncertainCells.add(sudokuCellBoard[i][j]);
                         }
@@ -81,7 +77,7 @@ public class SolverAlgorithm {
                 for(Integer val: c.possibleVals){
                     int[][] boardWithGuess = deconstructBoard(sudokuCellBoard);
                     boardWithGuess[c.row][c.column] = val;
-                    SudokuSolution valueGuess = recursSolver(boardWithGuess);
+                    SudokuSolution valueGuess = solveSudoku(boardWithGuess);
                     if(valueGuess.solveSuccess){return valueGuess;}
                 }
             }
