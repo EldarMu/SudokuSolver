@@ -1,3 +1,5 @@
+import javax.swing.*;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -8,84 +10,108 @@ import java.util.List;
 
 //though it won't crack Arto Inkala's "World's Hardest Sudoku", it beats anything else I throw at it.
 public class SolverAlgorithm {
-    public SudokuSolution solveSudoku(int[][] sudokuBoard){
-        SudokuCell[][] sudokuCellBoard = constructBoard(sudokuBoard);
-        SudokuCell[][] innerBoxes = fillInnerBoxes(sudokuCellBoard);
+    //if we have to guesstimate this many values while already penciling in,
+    //the odds of the result being the right one are very low
+    //However, it may be possible to create such a sudoku that deep guesses are required
+    private static final int MAX_STACK_DEPTH = 3;
+
+    public SudokuSolution solveSudoku(int[][] board, int stackLayer){
+        SudokuBoard sudokuBoard = new SudokuBoard(board);
+        if(stackLayer>=MAX_STACK_DEPTH){return new SudokuSolution(sudokuBoard.intBoard,false);}
         boolean lastScanSolvedACell = true;
         boolean allValsFilled = false;
         List<SudokuCell> uncertainCells = new LinkedList<>();
+
         while (lastScanSolvedACell && !allValsFilled) {
             lastScanSolvedACell = false;
             allValsFilled = true;
             uncertainCells = new LinkedList<>();
-            //basic scan of "only one value can go here"
+            //basic scan of "if there's only one value possible in this cell, write it in"
             for (int i = 0; i < 9; i++) {
                 for (int j = 0; j < 9; j++) {
-                    if(sudokuCellBoard[i][j].currentVal==0){
-                        List<Integer> possibleVals = calculatePossibleCellVals(sudokuCellBoard[i][j],
-                                sudokuCellBoard, innerBoxes);
-                        if(possibleVals.size()==0){
-                            return new SudokuSolution(sudokuBoard, false);
+                    SudokuCell curCell = sudokuBoard.cellBoard[i][j];
+                    if(curCell.currentVal==0){
+                        if(curCell.possibleVals.size()==0){
+                            return new SudokuSolution(sudokuBoard.intBoard, false);
                         }
-                        else if(possibleVals.size()==1){
-                            sudokuCellBoard[i][j].currentVal = possibleVals.get(0);
-                            sudokuCellBoard[i][j].possibleVals = new LinkedList<>();
+                        else if(curCell.possibleVals.size()==1){
+                            curCell.currentVal = curCell.possibleVals.get(0);
+                            curCell.possibleVals.clear();
+                            sudokuBoard.intBoard[i][j] = curCell.currentVal;
+                            sudokuBoard.updatePossibleValuesLists(curCell);
                             lastScanSolvedACell = true;
                         }
                         else{
                             allValsFilled = false;
-                            sudokuCellBoard[i][j].possibleVals = possibleVals;
-                            uncertainCells.add(sudokuCellBoard[i][j]);
                         }
                     }
                 }
             }
-            //follow-up scan of "only place where a value can go"
-            //needs to only run if no cell was modified prior,
-            //to ensure potential cell values match the situation on the board
-            if(!lastScanSolvedACell){
-                for(int i = 0; i < 9; i++){
-                    SudokuCell[] colSlice = new SudokuCell[9];
-                    SudokuCell[] boxSlice = new SudokuCell[9];
-                    SudokuCell[] rowSlice = new SudokuCell[9];
-                    for(int j = 0; j < 9; j++){
-                        colSlice[j] = sudokuCellBoard[j][i];
-                        boxSlice[j] = innerBoxes[i][j];
-                        rowSlice[j] = sudokuCellBoard[i][j];
-                    }
-                    if(checkIfOnlyPossiblePlaceForValue(colSlice)){
-                        lastScanSolvedACell=true;
-                        continue;
-                    }
-                    if(checkIfOnlyPossiblePlaceForValue(rowSlice)){
-                        lastScanSolvedACell=true;
-                        continue;
-                    }
-                    if(checkIfOnlyPossiblePlaceForValue(boxSlice)){
-                        lastScanSolvedACell=true;
-                        continue;
-                    }
+            //for each row, column, and 3x3 box
+            //see if there's any value that hasn't been put in, that can only go in one place
+            //the previous loop checked if a cell had only one possible value
+            //this loop checks if any possible value in a row/col/box can go into only one cell
+            for(int i = 0; i < 9; i++){
+                SudokuCell[] colSlice = new SudokuCell[9];
+                SudokuCell[] boxSlice = new SudokuCell[9];
+                SudokuCell[] rowSlice = new SudokuCell[9];
+                for(int j = 0; j < 9; j++){
+                    colSlice[j] = sudokuBoard.cellBoard[j][i];
+                    boxSlice[j] = sudokuBoard.innerBoxes[i][j];
+                    rowSlice[j] = sudokuBoard.cellBoard[i][j];
+                }
+                if(checkIfOnlyPossiblePlaceForValue(colSlice, sudokuBoard)){
+                    lastScanSolvedACell=true;
+                    continue;
+                }
+                if(checkIfOnlyPossiblePlaceForValue(rowSlice, sudokuBoard)){
+                    lastScanSolvedACell=true;
+                    continue;
+                }
+                if(checkIfOnlyPossiblePlaceForValue(boxSlice, sudokuBoard)){
+                    lastScanSolvedACell=true;
+                    continue;
                 }
             }
         }
+
         if(allValsFilled){
-            return new SudokuSolution(deconstructBoard(sudokuCellBoard), true);
+            return new SudokuSolution(sudokuBoard.intBoard, true);
         }
+
+        //find any cells with several possible values possible in them
+        //then sort that list by the ones that have the least options
+        //and "pencil them in"
+        //(aka run the method recursively as if they were valid values, and see if it returns false)
         if(!lastScanSolvedACell){
+            for(int i = 0; i < 9; i++){
+                for(int j = 0; j < 9; j++){
+                    SudokuCell curCell = sudokuBoard.cellBoard[i][j];
+                    if(curCell.possibleVals.size()>1){
+                        uncertainCells.add(curCell);
+                    }
+                }
+            }
             Collections.sort(uncertainCells);
+
             for(SudokuCell c : uncertainCells){
                 for(Integer val: c.possibleVals){
-                    int[][] boardWithGuess = deconstructBoard(sudokuCellBoard);
+                    int[][] boardWithGuess = new int[9][9];
+                    for(int i = 0; i < 9; i++){
+                        for(int j = 0; j < 9; j++){
+                            boardWithGuess[i][j] = sudokuBoard.intBoard[i][j];
+                        }
+                    }
                     boardWithGuess[c.row][c.column] = val;
-                    SudokuSolution valueGuess = solveSudoku(boardWithGuess);
+                    SudokuSolution valueGuess = solveSudoku(boardWithGuess, stackLayer+1);
                     if(valueGuess.solveSuccess){return valueGuess;}
                 }
             }
         }
-        return new SudokuSolution(deconstructBoard(sudokuCellBoard), false);
+        return new SudokuSolution(sudokuBoard.intBoard, false);
     }
 
-    private boolean checkIfOnlyPossiblePlaceForValue(SudokuCell[] rowColOrBox){
+    private boolean checkIfOnlyPossiblePlaceForValue(SudokuCell[] rowColOrBox, SudokuBoard cellBoard){
         List<Integer> possVals = new LinkedList<>();
         for(int i = 1; i < 10; i++){
             possVals.add(i);
@@ -111,98 +137,16 @@ public class SolverAlgorithm {
         }
         for(Integer soloVal : onePlaceOnly){
             for(int i = 0; i < 9; i++){
-                if(rowColOrBox[i].possibleVals.contains(soloVal)){
-                    rowColOrBox[i].currentVal = soloVal;
+                SudokuCell curCell = rowColOrBox[i];
+                if(curCell.possibleVals.contains(soloVal)){
+                    curCell.currentVal = soloVal;
+                    cellBoard.intBoard[curCell.row][curCell.column] = soloVal;
+                    cellBoard.updatePossibleValuesLists(curCell);
                     rowColOrBox[i].possibleVals = new LinkedList<>();
                     return true;
                 }
             }
         }
         return false;
-    }
-
-    private int[][] deconstructBoard(SudokuCell[][] board){
-        int[][] deconstructedBoard = new int[9][9];
-        for(int i = 0; i < 9; i++){
-            for(int j = 0; j<9; j++){
-                deconstructedBoard[i][j] = board[i][j].currentVal;
-            }
-        }
-        return deconstructedBoard;
-    }
-
-    private SudokuCell[][] constructBoard(int[][] sudokuBoard){
-        SudokuCell[][] sudBoard = new SudokuCell[9][9];
-        for(int i = 0; i < 9; i++){
-            for(int j = 0; j < 9; j++){
-                sudBoard[i][j] = new SudokuCell(sudokuBoard[i][j], i, j, innerBoxNumber(i,j));
-            }
-        }
-        return sudBoard;
-    }
-
-    //a second representation needed to keep track of which numbers have already occured in each inner box
-    private SudokuCell[][] fillInnerBoxes(SudokuCell[][] sudokuBoard) {
-        SudokuCell[][] innerBoxes = new SudokuCell[9][9];
-        int[][] centerCoords = {{1, 1}, {4, 1}, {7, 1}, {1, 4}, {4, 4}, {7, 4}, {1, 7}, {4, 7}, {7, 7}};
-        for (int i = 0; i < 9; i++) {
-            int centerY = centerCoords[i][0];
-            int centerX = centerCoords[i][1];
-            int counter = 0;
-            for (int j = -1; j < 2; j++) {
-                for (int k = -1; k < 2; k++) {
-                    innerBoxes[i][counter] = sudokuBoard[centerX + k][centerY + j];
-                    counter++;
-                }
-            }
-        }
-        return innerBoxes;
-    }
-
-    //return the inner 3x3 sudoku box in which this index lies
-    //with the top left being box 0, and the bottom right being box 8
-    private int innerBoxNumber(int row, int column){
-        //using the fact that ints round down
-        int colQuad = column/3;
-        int rowQuad = row/3;
-        return(rowQuad*3+colQuad);
-    }
-
-    private List<Integer> calculatePossibleCellVals(SudokuCell curCell, SudokuCell[][] board, SudokuCell[][] innerBoxes){
-        List<Integer> options = new LinkedList<>();
-        for(int i = 1; i < 10; i++){
-            options.add(i);
-        }
-        for(int i = 0; i < 9; i++){
-            if(options.contains(board[curCell.row][i].currentVal)){
-                options.remove(options.indexOf(board[curCell.row][i].currentVal));
-            }
-            if(options.contains(board[i][curCell.column].currentVal)){
-                options.remove(options.indexOf(board[i][curCell.column].currentVal));
-            }
-            if(options.contains(innerBoxes[curCell.quadrant][i].currentVal)){
-                options.remove(options.indexOf(innerBoxes[curCell.quadrant][i].currentVal));
-            }
-        }
-        return options;
-    }
-
-    class SudokuCell implements Comparable<SudokuCell>{
-        List<Integer> possibleVals;
-        int currentVal;
-        int row;
-        int column;
-        int quadrant;
-        SudokuCell(int currentVal, int row, int column, int quadrant){
-            this.currentVal = currentVal;
-            this.row = row;
-            this.column = column;
-            this.quadrant = quadrant;
-            possibleVals = new LinkedList<>();
-        }
-        public int compareTo(SudokuCell differentCell)
-        {
-            return this.possibleVals.size() - differentCell.possibleVals.size();
-        }
     }
 }

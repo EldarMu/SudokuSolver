@@ -1,6 +1,5 @@
-/**
- * Created by eldar on 7/8/2018.
- */
+//A simple container returning the sudoku board
+//And a boolean to indicate whether it managed to solve the puzzle
 public class SudokuSolution{
     public int[][] sudokuBoard;
     public boolean solveSuccess;

@@ -11,9 +11,9 @@ import java.awt.event.ActionEvent;
 
 import static javax.swing.SwingConstants.CENTER;
 
-/**
- * Created by eldar on 7/7/2018.
- */
+//A 9x9 board of text fields
+//Upon pressing the solve button, will attempt to solve the provided sudoku puzzle
+//Will fill whichever cells it did manage to solve, even if it ultimately fails to complete the puzzle
 public class SolverMenu extends JFrame{
     private JPanel pan;
     private JTextField[][] fields;
@@ -74,7 +74,7 @@ public class SolverMenu extends JFrame{
                     }
                 }
                 SolverAlgorithm slv = new SolverAlgorithm();
-                SudokuSolution result = slv.solveSudoku(sudokuVals);
+                SudokuSolution result = slv.solveSudoku(sudokuVals, 0);
                 if (!result.solveSuccess) {
                     JOptionPane.showMessageDialog(new JFrame(),"Could not solve Puzzle");
                 }
