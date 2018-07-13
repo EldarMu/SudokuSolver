@@ -1,15 +1,20 @@
 import java.util.LinkedList;
 import java.util.List;
 
-/**
- * Created by eldar on 7/12/2018.
- */
+//Take in an int[][] representation of the sudoku board, with 0s for blank spaces
+//creates a SudokuCell[][] representation of the board,
+//as well as a separate representation focused on the 3x3 boxes of the board
+//then, it populates the lists of potential values that each SudokuCell has once
+//when a SudokuCell gets assigned a value, a method is called that updates every cell in its 3x3 box, row, col
+//so that the assigned value is removed from their potential value lists
 public class SudokuBoard {
+    public boolean solveSuccess;
     public int[][] intBoard;
     public SudokuCell[][] cellBoard;
     public SudokuCell[][] innerBoxes;
 
     public SudokuBoard(int[][] intBoard){
+        solveSuccess = false;
         this.intBoard = intBoard;
         cellBoard = constructBoard();
         innerBoxes = fillInnerBoxes();

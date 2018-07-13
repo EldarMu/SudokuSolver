@@ -21,7 +21,7 @@ public class SolverMenu extends JFrame{
     private GridBagConstraints c1;
     private Font fnt;
 
-    public static void main(String args[]){
+    public static void main(String[] args){
         SolverMenu solver = new SolverMenu();
     }
     public SolverMenu(){
@@ -74,14 +74,14 @@ public class SolverMenu extends JFrame{
                     }
                 }
                 SolverAlgorithm slv = new SolverAlgorithm();
-                SudokuSolution result = slv.solveSudoku(sudokuVals, 0);
+                SudokuBoard result = slv.solveSudoku(sudokuVals, 0);
                 if (!result.solveSuccess) {
                     JOptionPane.showMessageDialog(new JFrame(),"Could not solve Puzzle");
                 }
                 for (int i = 0; i < 9; i++){
                     for (int j = 0; j < 9; j++){
-                        if(result.sudokuBoard[i][j]!=0){
-                            fields[i][j].setText(Integer.toString(result.sudokuBoard[i][j]));
+                        if(result.intBoard[i][j]!=0){
+                            fields[i][j].setText(Integer.toString(result.intBoard[i][j]));
                         }
                     }
                 }

@@ -1,12 +1,17 @@
-import javax.swing.*;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-/**
- * Created by eldar on 7/8/2018.
- */
+//The algorithm that solves the sudoku board
+//first it creates a SudokuBoard object,
+//then, for each cell, it looks if there's only one possible value to write in there
+//then, for each row, column, and 3x3 box, it looks if there's only one place
+//for an unwritten value to go. This repeats so long as at least one cell gets assigned a value
+//When no cell is assigned a value, it looks at the cells that don't have a value assigned
+//sorts them so the ones with the least potential value options are the first to be grabbed
+//then, it creates a new sudoku board with currently written in values,
+//writes in one of the possible values, and calls itself recursively
+//the recursive call that ultimately finds a solution will return true as well as the board
 
 //though it won't crack Arto Inkala's "World's Hardest Sudoku", it beats anything else I throw at it.
 public class SolverAlgorithm {
@@ -15,9 +20,9 @@ public class SolverAlgorithm {
     //However, it may be possible to create such a sudoku that deep guesses are required
     private static final int MAX_STACK_DEPTH = 3;
 
-    public SudokuSolution solveSudoku(int[][] board, int stackLayer){
+    public SudokuBoard solveSudoku(int[][] board, int stackLayer){
         SudokuBoard sudokuBoard = new SudokuBoard(board);
-        if(stackLayer>=MAX_STACK_DEPTH){return new SudokuSolution(sudokuBoard.intBoard,false);}
+        if(stackLayer>=MAX_STACK_DEPTH){return sudokuBoard;}
         boolean lastScanSolvedACell = true;
         boolean allValsFilled = false;
         List<SudokuCell> uncertainCells = new LinkedList<>();
@@ -32,7 +37,7 @@ public class SolverAlgorithm {
                     SudokuCell curCell = sudokuBoard.cellBoard[i][j];
                     if(curCell.currentVal==0){
                         if(curCell.possibleVals.size()==0){
-                            return new SudokuSolution(sudokuBoard.intBoard, false);
+                            return sudokuBoard;
                         }
                         else if(curCell.possibleVals.size()==1){
                             curCell.currentVal = curCell.possibleVals.get(0);
@@ -76,7 +81,8 @@ public class SolverAlgorithm {
         }
 
         if(allValsFilled){
-            return new SudokuSolution(sudokuBoard.intBoard, true);
+            sudokuBoard.solveSuccess = true;
+            return sudokuBoard;
         }
 
         //find any cells with several possible values possible in them
@@ -95,18 +101,14 @@ public class SolverAlgorithm {
 
         for(SudokuCell c : uncertainCells){
             for(Integer val: c.possibleVals){
-                int[][] boardWithGuess = new int[9][9];
-                for(int i = 0; i < 9; i++){
-                    for(int j = 0; j < 9; j++){
-                        boardWithGuess[i][j] = sudokuBoard.intBoard[i][j];
-                    }
-                }
+                int[][] boardWithGuess = sudokuBoard.intBoard.clone();
+
                 boardWithGuess[c.row][c.column] = val;
-                SudokuSolution valueGuess = solveSudoku(boardWithGuess, stackLayer+1);
+                SudokuBoard valueGuess = solveSudoku(boardWithGuess, stackLayer+1);
                 if(valueGuess.solveSuccess){return valueGuess;}
             }
         }
-        return new SudokuSolution(sudokuBoard.intBoard, false);
+        return sudokuBoard;
     }
 
     private boolean checkIfOnlyPossiblePlaceForValue(SudokuCell[] rowColOrBox, SudokuBoard cellBoard){
